@@ -1,6 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 
-from typing import Union
+from typing import Union, Annotated
 
 from model.model_name import ModelName
 from model.items import Item
@@ -68,7 +68,7 @@ async def read_user_item(item_id: str, needy: str):
 # Example of a request body in a POST method
 @app.post("/items5/")
 async def create_item(item: Item):
-    item_dict = item.dict() # Convert the item to a dictionary. It's possible by pydantic
+    item_dict = item.dict()  # Convert the item to a dictionary. It's possible by pydantic
     if item.tax:
         price_with_tax = item.price + item.tax
         item_dict.update({"price_with_tax": price_with_tax})
@@ -96,3 +96,147 @@ async def update_item(item_id: int, item: Item, q: str | None = None):
         result.update({"q": q})
     return result
 
+
+# Example of a validated query parameter
+@app.get("/items8/")
+async def read_items8(q: Annotated[str | None, Query(max_length=50)] = None):
+    """
+    The Query class is used to add validation to the query parameters.
+    :param q: A optional query parameter with a max length of 50 characters
+    :return: results with the query parameter if it exists
+    """
+    results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
+    if q:
+        results.update({"q": q})
+    return results
+
+
+# Example of other form of validated query parameter
+@app.get("/items9/")
+async def read_items9(q: str | None = Query(default=None, min_length=3, max_length=50)):
+    """
+    The Query class is used to add validation to the query parameters.
+    It's highly recommended to use the Query class instead of the Annotated class for query parameters.
+    :param q:
+    :return:
+    """
+    results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
+    if q:
+        results.update({"q": q})
+    return results
+
+
+# Example of query validation with regex patterns:
+@app.get("/items10/")
+async def read_items10(
+        q: str | None = Query(
+            default=None, min_length=3, max_length=50, pattern="^fixedquery$"
+            # The query parameter must be "fixedquery"
+        ),
+):
+    results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
+    if q:
+        results.update({"q": q})
+    return results
+
+
+# Example one of a required query parameter
+@app.get("/items11/")
+async def read_items11(q: Annotated[str, Query(min_length=3)]):
+    results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
+    if q:
+        results.update({"q": q})
+    return results
+
+
+# Example two of a required query parameter with ellipsis (...)
+@app.get("/items12/")
+async def read_items12(q: Annotated[str, Query(min_length=3)] = ...):
+    results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
+    if q:
+        results.update({"q": q})
+    return results
+
+
+# Example of a query parameter list
+@app.get("/items13/")
+async def read_items13(q: Annotated[Union[list[str], None], Query()] = None):
+    """
+    To declare a query parameter with a type of list, like in the example above, you need to explicitly use Query, otherwise it would be interpreted as a request body.
+    :param q:
+    :return:
+    """
+    query_items = {"q": q}
+    return query_items
+
+
+# Example of a query parameter list with a default value
+@app.get("/items14/")
+async def read_items14(q: Annotated[list[str], Query()] = ["foo", "bar"]):
+    query_items = {"q": q}
+    return query_items
+
+
+# Example add more metadata to the query parameter
+@app.get("/items15/")
+async def read_items15(
+    q: Annotated[
+        Union[str, None],
+        Query(
+            title="Query string",
+            description="Query string for the items to search in the database that have a good match",
+            min_length=3,
+        ),
+    ] = None,
+):
+    results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
+    if q:
+        results.update({"q": q})
+    return results
+
+
+# Example of query parameters with alias
+@app.get("/items16/")
+async def read_items16(q: Annotated[Union[str, None], Query(alias="item-query")] = None):
+    results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
+    if q:
+        results.update({"q": q})
+    return results
+
+
+# Example of deprecated query parameters
+@app.get("/items17/")
+async def read_items17(
+    q: Annotated[
+        Union[str, None],
+        Query(
+            alias="item-query",
+            title="Query string",
+            description="Query string for the items to search in the database that have a good match",
+            min_length=3,
+            max_length=50,
+            pattern="^fixedquery$",
+            deprecated=True,
+        ),
+    ] = None,
+):
+    results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
+    if q:
+        results.update({"q": q})
+    return results
+
+
+# Example of query parameter exclude from docs
+@app.get("/items18/")
+async def read_items18(
+    hidden_query: Annotated[Union[str, None], Query(include_in_schema=False)] = None,
+):
+    """
+    The include_in_schema parameter is used to exclude the query parameter from the generated OpenAPI documentation.
+    :param hidden_query:
+    :return:
+    """
+    if hidden_query:
+        return {"hidden_query": hidden_query}
+    else:
+        return {"hidden_query": "Not found"}
