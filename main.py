@@ -1,4 +1,6 @@
-from fastapi import FastAPI, Query, Path, Body
+from fastapi import FastAPI, Query, Path, Body, Cookie, Header, Response
+
+from fastapi.responses import JSONResponse, RedirectResponse
 
 from datetime import datetime, timedelta, time
 
@@ -8,7 +10,7 @@ from typing import Union, Annotated
 
 from model.model_name import ModelName
 from model.items import Item, Offer
-from model.users import User
+from model.users import User, UserIn, UserOut
 
 app = FastAPI()
 
@@ -185,14 +187,14 @@ async def read_items14(q: Annotated[list[str], Query()] = ["foo", "bar"]):
 # Example add more metadata to the query parameter
 @app.get("/items15/")
 async def read_items15(
-    q: Annotated[
-        Union[str, None],
-        Query(
-            title="Query string",
-            description="Query string for the items to search in the database that have a good match",
-            min_length=3,
-        ),
-    ] = None,
+        q: Annotated[
+            Union[str, None],
+            Query(
+                title="Query string",
+                description="Query string for the items to search in the database that have a good match",
+                min_length=3,
+            ),
+        ] = None,
 ):
     results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
     if q:
@@ -212,18 +214,18 @@ async def read_items16(q: Annotated[Union[str, None], Query(alias="item-query")]
 # Example of deprecated query parameters
 @app.get("/items17/")
 async def read_items17(
-    q: Annotated[
-        Union[str, None],
-        Query(
-            alias="item-query",
-            title="Query string",
-            description="Query string for the items to search in the database that have a good match",
-            min_length=3,
-            max_length=50,
-            pattern="^fixedquery$",
-            deprecated=True,
-        ),
-    ] = None,
+        q: Annotated[
+            Union[str, None],
+            Query(
+                alias="item-query",
+                title="Query string",
+                description="Query string for the items to search in the database that have a good match",
+                min_length=3,
+                max_length=50,
+                pattern="^fixedquery$",
+                deprecated=True,
+            ),
+        ] = None,
 ):
     results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
     if q:
@@ -234,7 +236,7 @@ async def read_items17(
 # Example of query parameter exclude from docs
 @app.get("/items18/")
 async def read_items18(
-    hidden_query: Annotated[Union[str, None], Query(include_in_schema=False)] = None,
+        hidden_query: Annotated[Union[str, None], Query(include_in_schema=False)] = None,
 ):
     """
     The include_in_schema parameter is used to exclude the query parameter from the generated OpenAPI documentation.
@@ -250,11 +252,12 @@ async def read_items18(
 # Example of a path parameter with a path parameter validation
 @app.get("/items19/{item_id}")
 async def read_items19(
-    item_id: Annotated[int, Path(
-        title="The ID of the item to get",
-        description="The ID must be a positive integer",
-    )], # The title parameter is used to add a title to the parameter in the generated OpenAPI documentation.
-    q: Annotated[str | None, Query(alias="item-query")] = None, # The alias parameter is used to add an alias to the parameter in the generated OpenAPI documentation.
+        item_id: Annotated[int, Path(
+            title="The ID of the item to get",
+            description="The ID must be a positive integer",
+        )],  # The title parameter is used to add a title to the parameter in the generated OpenAPI documentation.
+        q: Annotated[str | None, Query(alias="item-query")] = None,
+        # The alias parameter is used to add an alias to the parameter in the generated OpenAPI documentation.
 ):
     """
     In the Path Class you can declare all the same parameters as for Query.
@@ -271,11 +274,11 @@ async def read_items19(
 # Example of a path parameter with a path parameter number validation
 @app.get("/items20/{item_id}")
 async def read_items20(
-    item_id: Annotated[int, Path(
-        title="The ID of the item to get",
-        gt=0,
-        le=1000)],
-    q: str,
+        item_id: Annotated[int, Path(
+            title="The ID of the item to get",
+            gt=0,
+            le=1000)],
+        q: str,
 ):
     results = {"item_id": item_id}
     if q:
@@ -286,9 +289,9 @@ async def read_items20(
 # Example of a path, query and body parameters
 @app.put("/items21/{item_id}")
 async def update_item21(
-    item_id: Annotated[int, Path(title="The ID of the item to get", ge=0, le=1000)],
-    q: str | None = None,
-    item: Item | None = None,
+        item_id: Annotated[int, Path(title="The ID of the item to get", ge=0, le=1000)],
+        q: str | None = None,
+        item: Item | None = None,
 ):
     results = {"item_id": item_id}
     if q:
@@ -308,7 +311,7 @@ async def update_item22(item_id: int, item: Item, user: User):
 # Example of use singular values in a body parameter
 @app.put("/items23/{item_id}")
 async def update_item23(
-    item_id: int, item: Item, user: User, importance: Annotated[int, Body()]
+        item_id: int, item: Item, user: User, importance: Annotated[int, Body()]
 ):
     """
     If you declare a parameter with the Body class, it will be interpreted as a request body.
@@ -349,40 +352,40 @@ async def create_index_weights(weights: dict[int, float]):
 # Example of Bodies with multiple examples
 @app.put("/items26/{item_id}")
 async def update_item26(
-    *,
-    item_id: int,
-    item: Annotated[
-        Item,
-        Body(
-            openapi_examples={
-                "normal": {
-                    "summary": "A normal example",
-                    "description": "A **normal** item works correctly.",
-                    "value": {
-                        "name": "Foo",
-                        "description": "A very nice Item",
-                        "price": 35.4,
-                        "tax": 3.2,
+        *,
+        item_id: int,
+        item: Annotated[
+            Item,
+            Body(
+                openapi_examples={
+                    "normal": {
+                        "summary": "A normal example",
+                        "description": "A **normal** item works correctly.",
+                        "value": {
+                            "name": "Foo",
+                            "description": "A very nice Item",
+                            "price": 35.4,
+                            "tax": 3.2,
+                        },
+                    },
+                    "converted": {
+                        "summary": "An example with converted data",
+                        "description": "FastAPI can convert price `strings` to actual `numbers` automatically",
+                        "value": {
+                            "name": "Bar",
+                            "price": "35.4",
+                        },
+                    },
+                    "invalid": {
+                        "summary": "Invalid data is rejected with an error",
+                        "value": {
+                            "name": "Baz",
+                            "price": "thirty five point four",
+                        },
                     },
                 },
-                "converted": {
-                    "summary": "An example with converted data",
-                    "description": "FastAPI can convert price `strings` to actual `numbers` automatically",
-                    "value": {
-                        "name": "Bar",
-                        "price": "35.4",
-                    },
-                },
-                "invalid": {
-                    "summary": "Invalid data is rejected with an error",
-                    "value": {
-                        "name": "Baz",
-                        "price": "thirty five point four",
-                    },
-                },
-            },
-        ),
-    ],
+            ),
+        ],
 ):
     results = {"item_id": item_id, "item": item}
     return results
@@ -391,11 +394,11 @@ async def update_item26(
 # Example of Extra Data Types of FastApi
 @app.put("/items27/{item_id}")
 async def read_items27(
-    item_id: UUID,
-    start_datetime: Annotated[datetime, Body()],
-    end_datetime: Annotated[datetime, Body()],
-    process_after: Annotated[timedelta, Body()],
-    repeat_at: Annotated[time | None, Body()] = None,
+        item_id: UUID,
+        start_datetime: Annotated[datetime, Body()],
+        end_datetime: Annotated[datetime, Body()],
+        process_after: Annotated[timedelta, Body()],
+        repeat_at: Annotated[time | None, Body()] = None,
 ):
     start_process = start_datetime + process_after
     duration = end_datetime - start_process
@@ -408,3 +411,80 @@ async def read_items27(
         "start_process": start_process,
         "duration": duration,
     }
+
+
+# Example of Cookie Parameters
+@app.get("/items28/")
+async def read_items28(ads_id: Annotated[str | None, Cookie()] = None):
+    return {"ads_id": ads_id}
+
+
+# Example of Header Parameters
+@app.get("/items29/")
+async def read_items29(user_agent: Annotated[str | None, Header()] = None):
+    return {"User-Agent": user_agent}
+
+
+# Other example of Header Parameters without convert underscore to dash
+@app.get("/items30/")
+async def read_items30(
+        strange_header: Annotated[str | None, Header(convert_underscores=False)] = None,
+):
+    return {"strange_header": strange_header}
+
+
+# Example of duplicated headers
+@app.get("/items31/")
+async def read_items31(x_token: Annotated[list[str] | None, Header()] = None):
+    return {"X-Token values": x_token}
+
+
+# Example of a endpoint with declared response
+@app.post("/items32/")
+async def create_item32(item: Item) -> Item:
+    return item
+
+
+# Example 2 of a endpoint with declared response
+@app.get("/items33/")
+async def read_items33() -> list[Item]:
+    return [
+        Item(name="Foo", price=35.4),
+        Item(name="Bar", price=62),
+    ]
+
+
+# Example of a endpoint with declared response in response_model
+@app.post("/items34/", response_model=Item)
+async def create_item34(item: Item) -> Item:
+    return item
+
+
+# Example 2 of a endpoint with declared response in response_model
+@app.get("/items35/", response_model=list[Item])
+async def read_items35() -> list[Item]:
+    return [
+        Item(name="Foo", price=35.4),
+        Item(name="Bar", price=62),
+    ]
+
+
+# Example of input and output same model
+# Don't do this in production!
+@app.post("/user2/")
+async def create_user2(user: UserIn) -> UserIn:
+    return user
+
+
+@app.post("/user3/", response_model=UserOut)
+async def create_user3(user: UserIn) -> UserOut:
+    user = UserOut(**user.dict())  # Convert the UserIn model to UserOut model
+    return user
+
+
+# Example of Response Directly
+@app.get("/portal")
+async def get_portal(teleport: bool = False) -> Response:
+    if teleport:
+        return RedirectResponse(url="https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+    return JSONResponse(content={"message": "Here's your interdimensional portal."})
