@@ -1,9 +1,10 @@
-from fastapi import FastAPI, Query, Path
+from fastapi import FastAPI, Query, Path, Body
 
 from typing import Union, Annotated
 
 from model.model_name import ModelName
 from model.items import Item
+from model.users import User
 
 app = FastAPI()
 
@@ -277,3 +278,36 @@ async def read_items20(
         results.update({"q": q})
     return results
 
+
+# Example of a path, query and body parameters
+@app.put("/items21/{item_id}")
+async def update_item21(
+    item_id: Annotated[int, Path(title="The ID of the item to get", ge=0, le=1000)],
+    q: str | None = None,
+    item: Item | None = None,
+):
+    results = {"item_id": item_id}
+    if q:
+        results.update({"q": q})
+    if item:
+        results.update({"item": item})
+    return results
+
+
+# Example of multiple body parameters
+@app.put("/items22/{item_id}")
+async def update_item22(item_id: int, item: Item, user: User):
+    results = {"item_id": item_id, "item": item, "user": user}
+    return results
+
+
+# Example of use singular values in a body parameter
+@app.put("/items23/{item_id}")
+async def update_item23(
+    item_id: int, item: Item, user: User, importance: Annotated[int, Body()]
+):
+    """
+    If you declare a parameter with the Body class, it will be interpreted as a request body.
+    """
+    results = {"item_id": item_id, "item": item, "user": user, "importance": importance}
+    return results
