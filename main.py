@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from typing import Union
 
 from model.model_name import ModelName
+from model.items import Item
 
 app = FastAPI()
 
@@ -31,7 +32,7 @@ async def get_model(model_name: ModelName):
 # Example of a query parameter
 @app.get("/items/")
 async def read_item2(skip: int = 0, limit: int = 10):
-    return fake_items_db[skip: skip + limit] # Example of path for this endpoint:
+    return fake_items_db[skip: skip + limit]  # Example of path for this endpoint:
     # http://127.0.0.1:8000/items/?skip=0&limit=10
 
 
@@ -62,3 +63,36 @@ async def read_user_item(item_id: str, needy: str):
     item = {"item_id": item_id, "needy": needy}
     return item
     # If you try to access this endpoint without the needy parameter, you will get a 422 error
+
+
+# Example of a request body in a POST method
+@app.post("/items5/")
+async def create_item(item: Item):
+    item_dict = item.dict() # Convert the item to a dictionary. It's possible by pydantic
+    if item.tax:
+        price_with_tax = item.price + item.tax
+        item_dict.update({"price_with_tax": price_with_tax})
+    return item_dict
+
+
+# Example of a request body in a POST method with path parameters
+@app.put("/items6/{item_id}")
+async def update_item(item_id: int, item: Item):
+    return {"item_id": item_id, **item.dict()}
+
+
+# Example of a request body in a POST method with path parameters and query parameters
+@app.put("/items7/{item_id}")
+async def update_item(item_id: int, item: Item, q: str | None = None):
+    """
+    The function parameters will be recognized as follows:
+
+    If the parameter is also declared in the path, it will be used as a path parameter.
+    If the parameter is of a singular type (like int, float, str, bool, etc) it will be interpreted as a query parameter.
+    If the parameter is declared to be of the type of a Pydantic model, it will be interpreted as a request body.
+    """
+    result = {"item_id": item_id, **item.dict()}
+    if q:
+        result.update({"q": q})
+    return result
+
