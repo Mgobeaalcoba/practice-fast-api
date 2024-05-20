@@ -311,3 +311,13 @@ async def update_item23(
     """
     results = {"item_id": item_id, "item": item, "user": user, "importance": importance}
     return results
+
+
+# Example of use a BaseModel embedded in a body parameter
+@app.put("/items24/{item_id}")
+async def update_item24(item_id: int, item: Annotated[Item, Body(embed=True)]):
+    """
+    The embed parameter is used to indicate that the parameter is a Pydantic model that should be embedded in the request body.
+    """
+    results = {"item_id": item_id, "item": item}
+    return results
