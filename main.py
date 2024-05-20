@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Path
 
 from typing import Union, Annotated
 
@@ -240,3 +240,40 @@ async def read_items18(
         return {"hidden_query": hidden_query}
     else:
         return {"hidden_query": "Not found"}
+
+
+# Example of a path parameter with a path parameter validation
+@app.get("/items19/{item_id}")
+async def read_items19(
+    item_id: Annotated[int, Path(
+        title="The ID of the item to get",
+        description="The ID must be a positive integer",
+    )], # The title parameter is used to add a title to the parameter in the generated OpenAPI documentation.
+    q: Annotated[str | None, Query(alias="item-query")] = None, # The alias parameter is used to add an alias to the parameter in the generated OpenAPI documentation.
+):
+    """
+    In the Path Class you can declare all the same parameters as for Query.
+    :param item_id:
+    :param q:
+    :return:
+    """
+    results = {"item_id": item_id}
+    if q:
+        results.update({"q": q})
+    return results
+
+
+# Example of a path parameter with a path parameter number validation
+@app.get("/items20/{item_id}")
+async def read_items20(
+    item_id: Annotated[int, Path(
+        title="The ID of the item to get",
+        gt=0,
+        le=1000)],
+    q: str,
+):
+    results = {"item_id": item_id}
+    if q:
+        results.update({"q": q})
+    return results
+
