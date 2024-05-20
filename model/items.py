@@ -25,8 +25,27 @@ class Item(BaseModel):
     )
     tax: float | None = None
     tags: List[str] = []
-    set_tags: set[str] = set()
+    set_tags: set[str] = set(tags)
     image: Image | None = None
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "name": "Foo",
+                    "description": "A very nice Item",
+                    "price": 35.4,
+                    "tax": 3.2,
+                    "tags": ["tag1", "tag2"],
+                    "set_tags": ["tag1", "tag2"],
+                    "image": {
+                        "url": "https://example.com/image.jpg",
+                        "name": "image.jpg"
+                    }
+                }
+            ]
+        }
+    }
 
 
 class Offer(BaseModel):
