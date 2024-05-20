@@ -3,7 +3,7 @@ from fastapi import FastAPI, Query, Path, Body
 from typing import Union, Annotated
 
 from model.model_name import ModelName
-from model.items import Item
+from model.items import Item, Offer
 from model.users import User
 
 app = FastAPI()
@@ -321,3 +321,22 @@ async def update_item24(item_id: int, item: Annotated[Item, Body(embed=True)]):
     """
     results = {"item_id": item_id, "item": item}
     return results
+
+
+# Example of use a BaseModel with a submodel in a body parameter
+@app.put("/items25/{item_id}")
+async def update_item25(item_id: int, item: Item):
+    results = {"item_id": item_id, "item": item}
+    return results
+
+
+# Example of endpoint of nested models
+@app.post("/offers/")
+async def create_offer(offer: Offer):
+    return offer
+
+
+# Example of bodies of arbitrary dict
+@app.post("/index-weights/")
+async def create_index_weights(weights: dict[int, float]):
+    return weights

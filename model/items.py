@@ -1,4 +1,11 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, HttpUrl
+from typing import List
+
+
+# Submodel for the item
+class Image(BaseModel):
+    url: HttpUrl # This is a URL that must start with http or https. It's a special type of string that is used to represent URLs.
+    name: str
 
 
 class Item(BaseModel):
@@ -17,3 +24,13 @@ class Item(BaseModel):
         description="The price must be greater than zero"
     )
     tax: float | None = None
+    tags: List[str] = []
+    set_tags: set[str] = set()
+    image: Image | None = None
+
+
+class Offer(BaseModel):
+    name: str
+    description: str | None = None
+    price: float
+    items: List[Item]
